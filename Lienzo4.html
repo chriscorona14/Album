@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Lienzo Europeo | Nuestro Álbum de Recuerdos</title>
+    
+    <!-- Fuentes Editoriales -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- React 18 y Babel Standalone -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root {
+            --color-paper: #FDFBF7;
+            --color-ink: #27272A;
+            --color-accent: #C2410C;
+            --color-gold: #B59410;
+            --color-border: rgba(39, 39, 42, 0.08);
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+            --shadow-photo: 0 15px 35px rgba(0,0,0,0.06);
+            --transition-page: 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            --nav-height: 100px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--color-paper);
+            color: var(--color-ink);
+            font-family: var(--font-sans);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* Textura de papel sutil */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+            opacity: 0.25;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Contenedor de Scroll Horizontal */
+        .album-viewport {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .album-viewport::-webkit-scrollbar { display: none; }
+
+        .chapter {
+            flex: 0 0 100vw;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            scroll-snap-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4vw;
+            position: relative;
+            overflow-y: hidden; /* Desktop default */
+        }
+
+        /* Tipografía Editorial */
+        .serif { font-family: var(--font-serif); }
+        .italic { font-style: italic; }
+        .meta { font-size: 0.7rem; letter-spacing: 0.5em; text-transform: uppercase; color: var(--color-gold); margin-bottom: 1.5rem; display: block; font-weight: 600; }
+        .title-xl { font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1.1; margin-bottom: 2rem; letter-spacing: -0.02em; }
+        .narrative { font-size: 1.1rem; line-height: 1.8; color: rgba(39, 39, 42, 0.7); font-weight: 300; margin-bottom: 2.5rem; max-width: 400px; }
+        .handwritten { font-family: var(--font-serif); font-size: 1.1rem; color: var(--color-accent); font-style: italic; position: relative; padding-left: 1.5rem; }
+        .handwritten::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 1rem; height: 1px; background: var(--color-accent); opacity: 0.4; }
+
+        /* Marcos de Fotos */
+        .photo-frame {
+            background: white;
+            padding: 12px 12px 40px 12px;
+            box-shadow: var(--shadow-photo);
+            border: 1px solid var(--color-border);
+            transition: var(--transition-page);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .photo-frame:hover { transform: translateY(-5px) rotate(0deg) !important; box-shadow: 0 25px 50px rgba(0,0,0,0.1); }
+        
+        .photo-box {
+            width: 100%;
+            height: 100%;
+            background-color: #f4f2ef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .photo-box svg { width: 30px; opacity: 0.08; stroke-width: 1; }
+        
+        .photo-caption {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            text-align: center;
+            font-family: var(--font-serif);
+            font-size: 0.75rem;
+            color: var(--color-gold);
+            font-style: italic;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Layouts Específicos */
+        .layout-cover { text-align: center; max-width: 800px; }
+        .layout-cover h1 { font-size: clamp(3.5rem, 10vw, 7.5rem); margin: 1rem 0; font-weight: 400; }
+        .layout-cover .subtitle { font-size: 1rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--color-gold); }
+
+        .layout-arrival { display: grid; grid-template-columns: 1fr 1.2fr; gap: 60px; width: 100%; max-width: 1100px; align-items: center; }
+        .arrival-grid { display: grid; grid-template-columns: 1fr 0.8fr; gap: 20px; }
+        .arrival-main { grid-row: span 2; height: 500px; transform: rotate(-1deg); }
+        .arrival-sub { height: 240px; transform: rotate(1.5deg); }
+
+        .layout-art { display: flex; gap: 50px; width: 100%; max-width: 1200px; align-items: center; }
+        .art-collage { display: flex; gap: 20px; align-items: flex-end; }
+        .art-v { width: 320px; height: 480px; transform: rotate(-2deg); }
+        .art-s { width: 260px; height: 340px; transform: rotate(2deg); margin-bottom: 40px; }
+        .art-sq { width: 220px; height: 220px; transform: rotate(-1deg); }
+
+        .layout-table { display: flex; flex-direction: column; gap: 40px; width: 100%; max-width: 1000px; }
+        .table-top { display: flex; gap: 20px; justify-content: center; }
+        .table-item { width: 200px; height: 200px; transform: rotate(var(--r)); }
+        .table-main { width: 100%; height: 350px; transform: rotate(-0.5deg); }
+
+        .layout-moments { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 20px; width: 100%; max-width: 1100px; height: 70vh; }
+        .moment-item { transform: rotate(var(--r)); }
+        .moment-1 { grid-column: span 2; grid-row: span 2; }
+
+        .layout-final { display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; width: 100%; max-width: 1100px; align-items: center; }
+        .final-photos { display: flex; flex-direction: column; gap: 20px; }
+        .final-main { height: 450px; transform: rotate(1deg); }
+        .final-subs { display: flex; gap: 20px; }
+        .final-sub { flex: 1; height: 180px; transform: rotate(-1.5deg); }
+
+        /* Navegación */
+        .nav-bar {
+            position: fixed;
+            bottom: calc(40px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 35px;
+            z-index: 100;
+            padding: 12px 25px;
+            background: rgba(253, 251, 247, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 50px;
+            border: 1px solid var(--color-border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .nav-arrow { background: none; border: none; cursor: pointer; color: var(--color-ink); opacity: 0.3; transition: 0.3s; padding: 5px; display: flex; }
+        .nav-arrow:hover:not(:disabled) { opacity: 1; color: var(--color-accent); }
+        .nav-arrow:disabled { opacity: 0.05; cursor: default; }
+        .nav-dots { display: flex; gap: 12px; }
+        .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--color-ink); opacity: 0.1; cursor: pointer; transition: 0.4s; border: none; }
+        .nav-dot.active { opacity: 1; background: var(--color-accent); transform: scale(1.6); }
+
+        /* Animaciones */
+        .reveal { opacity: 0; transform: translateY(20px); transition: var(--transition-page); }
+        .active .reveal { opacity: 1; transform: translateY(0); }
+        .delay-1 { transition-delay: 0.15s; }
+        .delay-2 { transition-delay: 0.3s; }
+        .delay-3 { transition-delay: 0.45s; }
+
+        /* Responsive Móvil */
+        @media (max-width: 768px) {
+            .chapter { 
+                padding: 20px; 
+                padding-bottom: calc(var(--nav-height) + 40px + env(safe-area-inset-bottom)); 
+                overflow-y: auto; 
+                display: block; /* Permite scroll vertical interno */
+                scroll-snap-align: center;
+            }
+            
+            /* Contenedores internos para centrado en móvil si el contenido es corto */
+            .layout-cover, .layout-arrival, .layout-art, .layout-table, .layout-moments, .layout-final {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                width: 100%;
+                min-height: min-content;
+                padding-top: 40px;
+            }
+
+            /* Reordenamiento visual para móvil: Foto primero */
+            .text-side { order: 2; margin-top: 30px; width: 100%; }
+            .arrival-grid, .art-collage, .table-top, .final-photos { order: 1; display: flex; flex-direction: column; gap: 20px; width: 100%; }
+            
+            /* Ajustes de tamaño para fotos en móvil */
+            .arrival-main, .art-v, .table-main, .final-main { 
+                width: 100%; 
+                height: auto; 
+                aspect-ratio: 4/5; 
+                max-width: 340px; 
+                margin: 0 auto; 
+                transform: none !important;
+            }
+            
+            /* Ocultar fotos secundarias en móvil para evitar saturación, o mostrarlas debajo */
+            .arrival-sub, .art-s, .art-sq, .table-item, .final-sub { 
+                order: 3; 
+                width: 80%; 
+                height: auto; 
+                aspect-ratio: 1/1; 
+                margin: 10px auto; 
+                transform: none !important;
+            }
+
+            .layout-moments { 
+                display: flex; 
+                flex-direction: column; 
+                gap: 20px; 
+            }
+            .moment-item { 
+                width: 100%; 
+                height: auto; 
+                aspect-ratio: 4/5; 
+                transform: none !important;
+            }
+
+            .narrative { max-width: 100%; margin-bottom: 1.5rem; }
+            .title-xl { font-size: 2.2rem; margin-bottom: 1rem; }
+            
+            .nav-bar { 
+                width: 90%; 
+                justify-content: space-between; 
+                bottom: calc(15px + env(safe-area-inset-bottom)); 
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { transition: none; opacity: 1; transform: none; }
+            .album-viewport { scroll-behavior: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Icons = {
+            Prev: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            ),
+            Next: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            ),
+            Camera: () => (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            )
+        };
+
+        const Photo = ({ photo, className = "", style = {} }) => (
+            <div className={`photo-frame ${className}`} style={style}>
+                <div className="photo-box">
+                    <Icons.Camera />
+                    {/* <img src={photo.src} alt={photo.alt} /> */}
+                </div>
+                <div className="photo-caption">{photo.caption} • {photo.city}</div>
+            </div>
+        );
+
+        const chapters = [
+            {
+                id: 'cover',
+                layout: 'cover',
+                title: 'Lienzo Europeo',
+                subtitle: 'Nuestro Álbum de Recuerdos',
+                date: 'Verano 2026',
+                photos: []
+            },
+            {
+                id: 'arrival',
+                layout: 'arrival',
+                meta: 'Capítulo I • España',
+                title: 'La Llegada a Madrid',
+                text: 'Nuestros primeros pasos en el continente fueron bajo el sol dorado de Madrid. El bullicio de la Gran Vía y el aroma a café recién hecho marcaron el inicio de lo que sabíamos sería el viaje de nuestras vidas.',
+                note: '“Ese primer brindis en la Plaza Mayor se sintió como el comienzo de todo.”',
+                photos: [
+                    { src: './fotos/madrid-1.jpg', caption: 'Gran Vía al atardecer', city: 'Madrid', date: 'Julio 2026' },
+                    { src: './fotos/madrid-2.jpg', caption: 'Puerta del Sol', city: 'Madrid', date: 'Julio 2026' },
+                    { src: './fotos/madrid-3.jpg', caption: 'Primeras tapas', city: 'Madrid', date: 'Julio 2026' }
+                ]
+            },
+            {
+                id: 'art',
+                layout: 'art',
+                meta: 'Capítulo II • Francia',
+                title: 'Arte y Calles de París',
+                text: 'París no fue solo museos; fue perderse en las callejuelas de Montmartre y ver cómo la luz del atardecer bañaba el Sena. Descubrimos que la ciudad del amor es, sobre todo, una ciudad de detalles.',
+                note: '“Caminamos hasta que nos dolieron los pies, y aun así no queríamos parar.”',
+                photos: [
+                    { src: './fotos/paris-1.jpg', caption: 'Montmartre', city: 'París', date: 'Julio 2026' },
+                    { src: './fotos/paris-2.jpg', caption: 'El Sena', city: 'París', date: 'Julio 2026' },
+                    { src: './fotos/paris-3.jpg', caption: 'Louvre', city: 'París', date: 'Julio 2026' }
+                ]
+            },
+            {
+                id: 'table',
+                layout: 'table',
+                meta: 'Capítulo III • Italia',
+                title: 'La Mesa Compartida',
+                text: 'En Roma aprendimos que comer es un acto de amor. Cada plato de pasta en el Trastevere y cada gelato frente al Panteón fueron momentos de pura felicidad compartida.',
+                note: '“Nunca olvidaré el sabor de esa Trattoria escondida que encontramos por azar.”',
+                photos: [
+                    { src: './fotos/roma-1.jpg', caption: 'Pasta fresca', city: 'Roma', date: 'Agosto 2026' },
+                    { src: './fotos/roma-2.jpg', caption: 'Vino local', city: 'Roma', date: 'Agosto 2026' },
+                    { src: './fotos/roma-3.jpg', caption: 'Gelato', city: 'Roma', date: 'Agosto 2026' },
+                    { src: './fotos/roma-4.jpg', caption: 'Cena en Trastevere', city: 'Roma', date: 'Agosto 2026' }
+                ]
+            },
+            {
+                id: 'moments',
+                layout: 'moments',
+                meta: 'Capítulo IV • Memorias',
+                title: 'Instantes Eternos',
+                text: 'No fueron los grandes monumentos los que nos robaron el aliento, sino los silencios frente al Coliseo iluminado y las risas cómplices en los trayectos de tren.',
+                note: '“Hay lugares que no se visitan, se sienten.”',
+                photos: [
+                    { src: './fotos/m-1.jpg', caption: 'Coliseo', city: 'Roma', date: 'Agosto 2026' },
+                    { src: './fotos/m-2.jpg', caption: 'Duomo', city: 'Florencia', date: 'Agosto 2026' },
+                    { src: './fotos/m-3.jpg', caption: 'Canales', city: 'Venecia', date: 'Agosto 2026' },
+                    { src: './fotos/m-4.jpg', caption: 'Tren a Milán', city: 'Italia', date: 'Agosto 2026' },
+                    { src: './fotos/m-5.jpg', caption: 'Atardecer', city: 'Toscana', date: 'Agosto 2026' }
+                ]
+            },
+            {
+                id: 'final',
+                layout: 'final',
+                meta: 'Cierre • El Final',
+                title: 'El Gran Final',
+                text: 'Este viaje termina aquí, pero las historias que construimos nos acompañarán siempre. Gracias por ser mi mejor compañía en cada kilómetro recorrido.',
+                note: '“A por el siguiente destino, siempre juntos.”',
+                photos: [
+                    { src: './fotos/f-1.jpg', caption: 'Último brindis', city: 'Venecia', date: 'Agosto 2026' },
+                    { src: './fotos/f-2.jpg', caption: 'Promesas', city: 'Venecia', date: 'Agosto 2026' },
+                    { src: './fotos/f-3.jpg', caption: 'Hasta pronto', city: 'Europa', date: 'Agosto 2026' }
+                ]
+            }
+        ];
+
+        const App = () => {
+            const [activeIndex, setActiveIndex] = useState(0);
+            const scrollRef = useRef(null);
+
+            useEffect(() => {
+                const container = scrollRef.current;
+                const handleScroll = () => {
+                    if (container) {
+                        const index = Math.round(container.scrollLeft / container.clientWidth);
+                        if (index !== activeIndex) setActiveIndex(index);
+                    }
+                };
+
+                const handleKeys = (e) => {
+                    if (e.key === 'ArrowRight') move(activeIndex + 1);
+                    if (e.key === 'ArrowLeft') move(activeIndex - 1);
+                };
+
+                container.addEventListener('scroll', handleScroll);
+                window.addEventListener('keydown', handleKeys);
+                return () => {
+                    container.removeEventListener('scroll', handleScroll);
+                    window.removeEventListener('keydown', handleKeys);
+                };
+            }, [activeIndex]);
+
+            const move = (index) => {
+                if (index >= 0 && index < chapters.length) {
+                    scrollRef.current.scrollTo({
+                        left: index * scrollRef.current.clientWidth,
+                        behavior: 'smooth'
+                    });
+                }
+            };
+
+            return (
+                <main>
+                    <div className="album-viewport" ref={scrollRef}>
+                        {chapters.map((ch, i) => (
+                            <section key={ch.id} className={`chapter ${activeIndex === i ? 'active' : ''}`}>
+                                {ch.layout === 'cover' && (
+                                    <div className="layout-cover">
+                                        <span className="subtitle reveal">{ch.subtitle}</span>
+                                        <h1 className="serif reveal delay-1">{ch.title}</h1>
+                                        <p className="reveal delay-2 italic serif" style={{opacity: 0.5}}>{ch.date}</p>
+                                    </div>
+                                )}
+
+                                {ch.layout === 'arrival' && (
+                                    <div className="layout-arrival">
+                                        <div className="arrival-grid reveal delay-2">
+                                            <Photo photo={ch.photos[0]} className="arrival-main" />
+                                            <Photo photo={ch.photos[1]} className="arrival-sub" />
+                                            <Photo photo={ch.photos[2]} className="arrival-sub" />
+                                        </div>
+                                        <div className="text-side">
+                                            <span className="meta reveal">{ch.meta}</span>
+                                            <h2 className="title-xl serif reveal delay-1">{ch.title}</h2>
+                                            <p className="narrative reveal delay-2">{ch.text}</p>
+                                            <p className="handwritten reveal delay-3">{ch.note}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {ch.layout === 'art' && (
+                                    <div className="layout-art">
+                                        <div className="art-collage reveal delay-2">
+                                            <Photo photo={ch.photos[0]} className="art-v" />
+                                            <Photo photo={ch.photos[1]} className="art-s" />
+                                            <Photo photo={ch.photos[2]} className="art-sq" />
+                                        </div>
+                                        <div className="text-side">
+                                            <span className="meta reveal">{ch.meta}</span>
+                                            <h2 className="title-xl serif reveal delay-1">{ch.title}</h2>
+                                            <p className="narrative reveal delay-2">{ch.text}</p>
+                                            <p className="handwritten reveal delay-3">{ch.note}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {ch.layout === 'table' && (
+                                    <div className="layout-table">
+                                        <Photo photo={ch.photos[3]} className="table-main reveal delay-3" />
+                                        <div className="text-side">
+                                            <span className="meta reveal">{ch.meta}</span>
+                                            <h2 className="title-xl serif reveal delay-1">{ch.title}</h2>
+                                            <p className="narrative reveal delay-2">{ch.text}</p>
+                                        </div>
+                                        <div className="table-top reveal delay-2">
+                                            <Photo photo={ch.photos[0]} className="table-item" style={{"--r": "-2deg"}} />
+                                            <Photo photo={ch.photos[1]} className="table-item" style={{"--r": "1deg"}} />
+                                            <Photo photo={ch.photos[2]} className="table-item" style={{"--r": "-1.5deg"}} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {ch.layout === 'moments' && (
+                                    <div className="layout-moments">
+                                        <Photo photo={ch.photos[0]} className="moment-item moment-1 reveal delay-1" style={{"--r": "0.5deg"}} />
+                                        <Photo photo={ch.photos[1]} className="moment-item reveal delay-2" style={{"--r": "-2deg"}} />
+                                        <Photo photo={ch.photos[2]} className="moment-item reveal delay-2" style={{"--r": "1.5deg"}} />
+                                        <Photo photo={ch.photos[3]} className="moment-item reveal delay-3" style={{"--r": "-1deg"}} />
+                                        <Photo photo={ch.photos[4]} className="moment-item reveal delay-3" style={{"--r": "2deg"}} />
+                                    </div>
+                                )}
+
+                                {ch.layout === 'final' && (
+                                    <div className="layout-final">
+                                        <div className="final-photos reveal delay-2">
+                                            <Photo photo={ch.photos[0]} className="final-main" />
+                                            <div className="final-subs">
+                                                <Photo photo={ch.photos[1]} className="final-sub" />
+                                                <Photo photo={ch.photos[2]} className="final-sub" />
+                                            </div>
+                                        </div>
+                                        <div className="text-side">
+                                            <span className="meta reveal">{ch.meta}</span>
+                                            <h2 className="title-xl serif reveal delay-1">{ch.title}</h2>
+                                            <p className="narrative reveal delay-2">{ch.text}</p>
+                                            <p className="handwritten reveal delay-3">{ch.note}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+                        ))}
+                    </div>
+
+                    <nav className="nav-bar">
+                        <button className="nav-arrow" onClick={() => move(activeIndex - 1)} disabled={activeIndex === 0} aria-label="Anterior">
+                            <Icons.Prev />
+                        </button>
+                        <div className="nav-dots">
+                            {chapters.map((_, i) => (
+                                <button key={i} className={`nav-dot ${activeIndex === i ? 'active' : ''}`} onClick={() => move(i)} aria-label={`Ir al capítulo ${i + 1}`} />
+                            ))}
+                        </div>
+                        <button className="nav-arrow" onClick={() => move(activeIndex + 1)} disabled={activeIndex === chapters.length - 1} aria-label="Siguiente">
+                            <Icons.Next />
+                        </button>
+                    </nav>
+                </main>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
